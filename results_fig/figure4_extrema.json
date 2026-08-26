@@ -1,0 +1,11 @@
+{
+  "local_max_indices": [
+    2,
+    5,
+    7
+  ],
+  "local_min_indices": [
+    3,
+    6
+  ]
+}

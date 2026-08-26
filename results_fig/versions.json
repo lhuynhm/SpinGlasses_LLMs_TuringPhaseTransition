@@ -1,0 +1,10 @@
+{
+  "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:14:06) [Clang 20.1.8 ]",
+  "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+  "numpy": "2.5.2",
+  "pandas": "3.0.5",
+  "matplotlib": "3.11.1",
+  "seaborn": "0.13.2",
+  "statsmodels": "0.14.6",
+  "scipy": "1.18.0"
+}

@@ -124,14 +124,18 @@ def compute_human_accuracy_by_flitz(tidy_df: pd.DataFrame):
     df['flitz_label'] = df['flitz_id'].astype(str)
     return df
 
-def compute_binned_means_for_fig3(tidy_df: pd.DataFrame):
+def compute_binned_means_for_fig3(tidy_df: pd.DataFrame, include_lowest: bool = False):
+    # include_lowest=False keeps the original behaviour (ratings of exactly 1 fall
+    # outside the first bin and are dropped).  The LLM-judge panels pass True,
+    # because a rating of 1 is a very common verdict there.
     bins = np.arange(1, 11.5, 0.5)
     labels = (bins[:-1] + bins[1:]) / 2
     out_rows = []
     for author_type in ["AI", "Human"]:
         subset = tidy_df[tidy_df["true_author"] == author_type].copy()
         subset["correct_numeric"] = subset["correct"].astype(int)
-        subset["rating_bin"] = pd.cut(subset["rating"], bins=bins, labels=labels)
+        subset["rating_bin"] = pd.cut(subset["rating"], bins=bins, labels=labels,
+                                      include_lowest=include_lowest)
         grouped = subset.groupby("rating_bin", observed=False)["correct_numeric"]
         mean_correct = grouped.mean()
         count = grouped.count()
@@ -155,11 +159,16 @@ def compute_logistic_predictions(tidy_df: pd.DataFrame, n_points: int = 100):
         subset = subset.dropna(subset=["rating", "correct_numeric"])
         if subset.empty:
             continue
-        X = sm.add_constant(subset["rating"])
         y = subset["correct_numeric"]
-        model = sm.Logit(y, X).fit(disp=False)
-        X_pred = sm.add_constant(rating_range)
-        y_pred = model.predict(X_pred)
+        if y.nunique() < 2:
+            # Degenerate outcome (a judge that is right -- or wrong -- everywhere):
+            # the logistic model is not identified, its MLE is the constant fit.
+            y_pred = np.full(n_points, float(y.iloc[0]))
+        else:
+            X = sm.add_constant(subset["rating"])
+            model = sm.Logit(y, X).fit(disp=False)
+            X_pred = sm.add_constant(rating_range)
+            y_pred = model.predict(X_pred)
         df_pred = pd.DataFrame({
             "Author": author_type,
             "Rating": rating_range,
